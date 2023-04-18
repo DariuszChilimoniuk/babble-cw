@@ -1,1 +1,3 @@
-# babble-cw
+# Babble CW
+
+Morse learning tool
