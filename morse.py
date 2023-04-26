@@ -1,4 +1,7 @@
 from enum import Enum
+from itertools import repeat
+from re import finditer
+
 
 class MorseElement(Enum):
     DIT = 1
@@ -7,80 +10,112 @@ class MorseElement(Enum):
     LETTER_GAP = 4
     WORD_GAP = 5
 
-def morse_character(character):
-    if character not in morse_patterns:
-        raise ValueError(f'Unknown {character}')
-    character_pattern = morse_patterns[character]
-    last_element_idx = len(character_pattern) - 1
-    for element_idx, element_value in enumerate(character_pattern):
+def translate_token(token):
+    if token not in morse_patterns:
+        raise ValueError(f"Unknown token '{token}'")
+    pattern = morse_patterns[token]
+    last_element_idx = len(pattern) - 1
+    for element_idx, element_value in enumerate(pattern):
         match element_value:
             case '.' | '*':
                 yield MorseElement.DIT
-            case '_' | '-':
+            case '-' | '_':
                 yield MorseElement.DAH
             case _:
                 continue
         if element_idx != last_element_idx:
             yield MorseElement.INTERNAL_GAP
 
+def tokenize(text):
+    morse_char_iter = finditer("(<[A-Z]{2,5}>)|([A-Z0-9.,?=/+\n\t ])", text)
+    for morse_match in morse_char_iter:
+        if morse_match.group(1):
+            # phrase
+            yield morse_match.group(1)
+        else:
+            # single character
+            yield morse_match.group(2)
 
-def morse_phrase(text):
+def translate_phrase(text):
     last_character = None
-    for character in text:
+    for character in tokenize(text):
         match character:
-            case ' ' | '\n':
+            case ' ':
                 yield MorseElement.WORD_GAP
+                last_character = None
+            case '\n':
+                yield MorseElement.WORD_GAP
+                yield from translate_token('=')
+                yield MorseElement.WORD_GAP
+                last_character = None
+            case '\t':
+                yield from repeat(MorseElement.WORD_GAP, 8)
                 last_character = None
             case _:
                 if last_character:
                     yield MorseElement.LETTER_GAP
-                yield from morse_character(character)
+                yield from translate_token(character)
                 last_character = character
 
 
 morse_patterns = {
+    # LETTERS
     'A': '.-',
-    'B': '_...',
-    'C': '_._.',
-    'D': '_..',
+    'B': '-...',
+    'C': '-.-.',
+    'D': '-..',
     'E': '.',
-    'F': '.._.',
-    'G': '__.',
+    'F': '..-.',
+    'G': '--.',
     'H': '....',
     'I': '..',
-    'J': '.___',
-    'K': '_._',
-    'L': '._..',
-    'M': '__',
-    'N': '_.',
-    'O': '___',
-    'P': '.__.',
-    'Q': '__._',
-    'R': '._.',
+    'J': '.---',
+    'K': '-.-',
+    'L': '.-..',
+    'M': '--',
+    'N': '-.',
+    'O': '---',
+    'P': '.--.',
+    'Q': '--.-',
+    'R': '.-.',
     'S': '...',
-    'T': '_',
-    'U': '.._',
-    'V': '..._',
-    'W': '.__',
-    'X': '_.._',
-    'Y': '_.__',
-    'Z': '__..',
-    '1': '.____',
-    '2': '..___',
-    '3': '...__',
-    '4': '...._',
+    'T': '-',
+    'U': '..-',
+    'V': '...-',
+    'W': '.--',
+    'X': '-..-',
+    'Y': '-.--',
+    'Z': '--..',
+    # DIGITS
+    '1': '.----',
+    '2': '..---',
+    '3': '...--',
+    '4': '....-',
     '5': '.....',
-    '6': '_....',
-    '7': '__...',
-    '8': '___..',
-    '9': '____.',
-    '0': '_____',
-    '.': '._._._',
-    ',': '__..__',
-    '?': '..__..',
-    '=': '_..._',
-    '/': '_..__',
+    '6': '-....',
+    '7': '--...',
+    '8': '---..',
+    '9': '----.',
+    '0': '-----',
+    # PUNCTATION
+    '.': '.-.-.-',
+    ',': '--..--',
+    '?': '..--..',
+    '=': '-...-',
+    '/': '-..--',
+    # NONSTANDARD
+    '+':  '.-.-.',
+    '<AR>': '.-.-.',
+    '<AS>':  '.-...',
+    '<BT>': '-...-',
+    '<HH>': '........',
+    '<KN>': '-.--.',
+    '<SK>': '...-.-',
+    '<SOS>': '...---...',
 }
 
-for a in morse_phrase('HELLO WORLD'):
+for a in translate_phrase('CQ DE XYZ <BT>'):
     print(a)
+
+# for a in translate_token('C'):
+#     print(a)
