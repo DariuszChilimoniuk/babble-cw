@@ -1,6 +1,8 @@
 import os
 from pprint import pprint
 import numpy as np
+import scipy.io.wavfile as wav
+
 from morse_coder import Morse2WaveFile
 
 def interpolate_linearly(wave_table, index):
@@ -66,7 +68,7 @@ def main():
     period_between_characters = 3*farnsworth_time/19
     period_between_words = 7*farnsworth_time/19
 
-    aux_data['sample_rate'] = sample_rate
+    # aux_data['sample_rate'] = sample_rate
     aux_data['dit'] = signal(wave_table, unit_period, pitch, gain_dB, sample_rate, fade_in_out_length)
     aux_data['dit_time'] = unit_period
     aux_data['dah'] = signal(wave_table, dah_period, pitch, gain_dB, sample_rate, fade_in_out_length)
@@ -80,10 +82,16 @@ def main():
     dir = '.\\media\\audio' 
     if not os.path.exists(dir):
         os.makedirs(dir)
-    aux_data['output_file'] = os.path.join("media\\audio", "out2.wav")
+    output_file = os.path.join("media\\audio", "out2.wav")
 
     gen = Morse2WaveFile()
-    gen.render("CQ CQ CQ DE SP5DD SP5DD + K", param=aux_data)
+    gen.ctrl_log("OP1")
+    gen.render("CQ CQ CQ DE SP5DD SP5DD K", param=aux_data)
+    gen.ctrl_log("OP2")
+    gen.render("    ", param=aux_data)
+    gen.render("OK1FF DE SP5DD K", param=aux_data)
+
+    wav.write(output_file, sample_rate, aux_data['output'].astype(np.float32))
 
     metadata_file = os.path.join("media\\audio", "out2.txt")
     with open(metadata_file, "w") as file:

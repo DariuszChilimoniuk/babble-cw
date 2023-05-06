@@ -175,7 +175,7 @@ class Scenario(Scene):
         # self.update_self(0)
         # self.play(Transform(Circle(1, RED).to_edge(LEFT), Triangle().to_edge(LEFT), run_time=5))
         # self.clear()    
-        self.wait(15)
+        self.wait(25)
 
     def refresh(self):
         print(".")
